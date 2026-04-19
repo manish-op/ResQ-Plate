@@ -1,0 +1,59 @@
+package com.resq.ResQ_Plate.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "claims")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Claim {
+
+    public enum Status {
+        PENDING_PICKUP, COMPLETED, CANCELLED
+    }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(updatable = false, nullable = false)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "donation_id", nullable = false)
+    private Donation donation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "claimant_id", nullable = false)
+    private User claimant;
+
+    /** Unique UUID token embedded inside the QR code URL */
+    @Column(unique = true, nullable = false)
+    private String qrToken;
+
+    /** Base64 PNG image: data:image/png;base64,... — sent to frontend for rendering */
+    @Column(columnDefinition = "TEXT")
+    private String qrCodeBase64;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Status status = Status.PENDING_PICKUP;
+
+    @Column(updatable = false)
+    private LocalDateTime claimedAt;
+
+    /** Set when the volunteer scans the QR code at the store */
+    private LocalDateTime pickedUpAt;
+
+    @PrePersist
+    protected void onCreate() {
+        claimedAt = LocalDateTime.now();
+        if (status == null) status = Status.PENDING_PICKUP;
+    }
+}

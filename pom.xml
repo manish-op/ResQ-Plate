@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<!-- Downgraded from 4.0.5: Spring AI 1.0.0-M6 requires Spring Boot 3.x.
+		     Spring Boot 4.0 moved RestClientAutoConfiguration which breaks Spring AI startup. -->
+		<version>3.4.4</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.resq</groupId>
+	<artifactId>ResQ_Plate</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>ResQ_Plate</name>
+	<description>Zero-Waste Food Rescue Network — Real-time food donation dispatch platform</description>
+
+	<properties>
+		<java.version>17</java.version>
+		<!-- Using Spring AI 1.0.0-M6 with OpenAI starter pointed at Gemini's OpenAI-compatible API -->
+		<spring-ai.version>1.0.0-M6</spring-ai.version>
+		<jjwt.version>0.12.6</jjwt.version>
+		<zxing.version>3.5.3</zxing.version>
+		<poi.version>5.3.0</poi.version>
+	</properties>
+
+	<!-- Spring AI Bill of Materials -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- WEB + WEBSOCKET                         -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- DATA — JPA + POSTGRESQL                 -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- SECURITY                                -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- JWT (JJWT 0.12.x)                      -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- VALIDATION + MAIL                       -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- SPRING AI — OPENAI STARTER              -->
+		<!-- Used to call Google Gemini via its      -->
+		<!-- OpenAI-compatible API endpoint:         -->
+		<!--   https://generativelanguage.googleapis  -->
+		<!--   .com/v1beta/openai/                   -->
+		<!-- No Vertex AI / GCP project needed.      -->
+		<!-- Just an API key from aistudio.google.com-->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- QR CODE — ZXING                         -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>${zxing.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+			<version>${zxing.version}</version>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- EXCEL REPORTS — APACHE POI              -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- UTILITIES                               -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
+		<!-- TEST                                    -->
+		<!-- ═══════════════════════════════════════ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+	<!-- Spring repos — required for Spring AI -->
+	<repositories>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>spring-releases</id>
+			<name>Spring Releases</name>
+			<url>https://repo.spring.io/release</url>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
+	</repositories>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
