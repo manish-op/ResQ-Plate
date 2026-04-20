@@ -12,15 +12,6 @@ const RecipientClaimsPage = () => {
   const { user, logout, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user || user.role !== 'RECIPIENT') {
-      navigate('/auth');
-      return;
-    }
-    fetchClaims();
-  }, [user, navigate, authLoading]);
-
   const fetchClaims = async () => {
     try {
       setLoading(true);
@@ -33,6 +24,16 @@ const RecipientClaimsPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user || user.role !== 'RECIPIENT') {
+      navigate('/auth');
+      return;
+    }
+    fetchClaims();
+  }, [user, navigate, authLoading]);
+
 
   return (
     <div className="container page-wrapper">
@@ -106,13 +107,29 @@ const RecipientClaimsPage = () => {
 
               <div style={{ display: 'flex', alignItems: 'center', minWidth: '180px' }}>
                 {c.status === 'PENDING_PICKUP' ? (
-                  <button 
-                    className="btn-primary" 
-                    style={{ width: '100%', padding: '0.8rem' }}
-                    onClick={() => setSelectedQr({ image: c.qrCodeBase64, token: c.qrToken })}
-                  >
-                    Show QR Code
-                  </button>
+                  <>
+                    <button 
+                      className="btn-primary" 
+                      style={{ width: '100%', padding: '0.8rem' }}
+                      onClick={() => setSelectedQr({ image: c.qrCodeBase64, token: c.qrToken })}
+                    >
+                      Show QR Code
+                    </button>
+                    {(c.donorLatitude || c.donorAddress) && (
+                      <button 
+                        className="btn-secondary" 
+                        style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem' }}
+                        onClick={() => {
+                          const url = c.donorLatitude 
+                            ? `https://www.google.com/maps/dir/?api=1&destination=${c.donorLatitude},${c.donorLongitude}`
+                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.donorAddress)}`;
+                          window.open(url, '_blank');
+                        }}
+                      >
+                        🚀 Get Directions
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <div style={{ color: 'var(--color-primary)', fontWeight: 'bold', width: '100%', textAlign: 'center' }}>
                      ✅ Completed

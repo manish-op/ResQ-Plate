@@ -21,6 +21,9 @@ public class ClaimResponse {
     private String qrToken;
     /** Base64 PNG data URI: "data:image/png;base64,..." — render directly in <img src="..."> */
     private String qrCodeBase64;
+    private String donorAddress;
+    private Double donorLatitude;
+    private Double donorLongitude;
     private String status;
     private LocalDateTime claimedAt;
     private LocalDateTime pickedUpAt;

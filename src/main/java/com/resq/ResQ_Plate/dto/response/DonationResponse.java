@@ -27,6 +27,9 @@ public class DonationResponse {
     private BigDecimal estimatedWeightKg;
     private BigDecimal estimatedValueUsd;
     private String urgency;
+    private String donorAddress;
+    private Double donorLatitude;
+    private Double donorLongitude;
     private LocalDateTime expiresAt;
     private String status;
     private LocalDateTime createdAt;

@@ -27,6 +27,23 @@ const Navbar = () => {
         <span>ResQ<span style={{ color: 'var(--color-primary)' }}>Plate</span></span>
       </Link>
 
+      {user && (
+        <div style={{
+          marginLeft: '1rem',
+          padding: '0.2rem 0.6rem',
+          borderRadius: '4px',
+          fontSize: '0.7rem',
+          fontWeight: 800,
+          letterSpacing: '0.05em',
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid var(--color-primary-glow)',
+          color: 'var(--color-primary)',
+          textTransform: 'uppercase'
+        }}>
+          {isDonor ? 'Donor Portal' : 'Recipient Portal'}
+        </div>
+      )}
+
       {/* Navigation Links */}
       <div className="navbar-links">
         {isDonor && (
@@ -76,11 +93,11 @@ const Navbar = () => {
           <div style={{
             padding: '0.35rem 0.9rem',
             borderRadius: 'var(--radius-full)',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--color-primary-glow)',
+            border: '1px solid var(--color-primary)',
             fontSize: '0.82rem',
-            fontWeight: '600',
-            color: 'var(--color-text-sub)',
+            fontWeight: '700',
+            color: 'var(--color-text-main)',
             maxWidth: '140px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

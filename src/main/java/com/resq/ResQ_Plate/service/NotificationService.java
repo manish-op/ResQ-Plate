@@ -20,19 +20,19 @@ public class NotificationService {
      * React subscription: stompClient.subscribe('/topic/donations/new', callback)
      */
     public void broadcastNewDonation(DonationResponse donation) {
-        messagingTemplate.convertAndSend("/topic/donations/new", donation);
-        log.info("Broadcast new donation [{}] to /topic/donations/new", donation.getId());
+        messagingTemplate.convertAndSend("/topic/donations", donation);
+        log.info("Broadcast new donation [{}] to /topic/donations", donation.getId());
     }
 
     /**
      * Broadcast a donation status change (CLAIMED / COMPLETED / EXPIRED).
-     * React subscription: stompClient.subscribe('/topic/donations/status', callback)
+     * React subscription: stompClient.subscribe('/topic/donations/status',
+     * callback)
      */
     public void broadcastDonationStatusUpdate(String donationId, String newStatus) {
         Map<String, String> payload = Map.of(
                 "donationId", donationId,
-                "status", newStatus
-        );
+                "status", newStatus);
         messagingTemplate.convertAndSend("/topic/donations/status", payload);
         log.info("Broadcast status update for donation [{}]: {}", donationId, newStatus);
     }
@@ -49,8 +49,7 @@ public class NotificationService {
     public void notifyDonorOfClaim(String donorUserId, String claimantName, String itemDesc) {
         Map<String, String> payload = Map.of(
                 "type", "CLAIM_RECEIVED",
-                "message", claimantName + " has claimed your donation: " + itemDesc
-        );
+                "message", claimantName + " has claimed your donation: " + itemDesc);
         messagingTemplate.convertAndSendToUser(donorUserId, "/queue/notifications", payload);
         log.info("Notified donor [{}] of claim by {}", donorUserId, claimantName);
     }
@@ -61,8 +60,7 @@ public class NotificationService {
     public void notifyPickupCompleted(String recipientUserId, String donationDesc) {
         Map<String, String> payload = Map.of(
                 "type", "PICKUP_COMPLETE",
-                "message", "Pickup confirmed for: " + donationDesc
-        );
+                "message", "Pickup confirmed for: " + donationDesc);
         messagingTemplate.convertAndSendToUser(recipientUserId, "/queue/notifications", payload);
     }
 }
