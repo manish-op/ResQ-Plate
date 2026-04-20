@@ -1,0 +1,29 @@
+# ResQ Plate Phase 2: MCP Integration Walkthrough
+
+We have successfully completed Phase 2, exposing platform functionalities via the Model Context Protocol (MCP) to AI agents and implementing an in-app `SupportChatbot`.
+
+## What Was Accomplished
+
+### 1. Spring AI MCP Server Setup
+- Added `spring-ai-mcp-server-spring-boot-starter` to `pom.xml`.
+- Added configuration properties to `application.properties` to start a synchronous MCP server using SSE transport for remote agents.
+
+### 2. MCP Tools Developed
+We exposed our services to AI agents through automatically discovered `@Bean` Functions:
+- **`AdminCopilotTools`**:
+  - `getAvailableDonationsTool`: Read-only operation to get all active food listings.
+  - `getDonationsByDonorTool`: Retrieves history for a specific donor.
+- **`NgoClaimAgentTools`**:
+  - `claimDonationTool`: Action execution capable of officially claiming a donation and returning the QR code token.
+- **`SupportBotTools`**:
+  - `generateTaxReportTool`: Document generation triggering the background process to rebuild an Excel tax report for a given month, generating a link the user can download.
+
+### 3. Application Endpoint
+- **`ChatbotController`**: Hooked into Spring AI `ChatClient` with function calling enabled so that users sending a message (e.g. "I want my tax report for this month") will hit our MCP tools behind the scenes, generate an Excel file, and return an actionable download link to the frontend.
+
+### 4. UI Uplift Completion
+- Integrated the React frontend modifications (`AuthPage`, `RecipientApp`, `DonorDashboard`, `SupportChatbot`) with `App.jsx`.
+- Verified the build compiles correctly.
+
+> [!NOTE]
+> The MCP server is now active and capable of serving both local `ChatClient` instances (like our SupportChatbot) and remote, desktop-based LLM assistants through the SSE endpoints.

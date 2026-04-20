@@ -106,9 +106,19 @@ public class DonationService {
     @Transactional(readOnly = true)
     public List<DonationResponse> getDonationsByDonorEmail(String email) {
         User donor = findDonor(email);
-        return donationRepository.findByDonorOrderByCreatedAtDesc(donor)
-                .stream()
-                .map(this::toResponse)
+        List<Donation> donations = donationRepository.findByDonorOrderByCreatedAtDesc(donor);
+        
+        if (donations.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> donationIds = donations.stream().map(Donation::getId).collect(Collectors.toList());
+        java.util.Map<UUID, Claim> activeClaimsMap = claimRepository.findByDonationIdIn(donationIds).stream()
+                .filter(c -> c.getStatus() != Claim.Status.CANCELLED)
+                .collect(Collectors.toMap(c -> c.getDonation().getId(), c -> c, (c1, c2) -> c1));
+
+        return donations.stream()
+                .map(d -> toResponse(d, activeClaimsMap.get(d.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -120,16 +130,21 @@ public class DonationService {
     }
 
     public DonationResponse toResponse(Donation d) {
+        Claim activeClaim = null;
+        if (d.getStatus() == Donation.Status.CLAIMED || d.getStatus() == Donation.Status.COMPLETED) {
+            activeClaim = claimRepository.findByDonationId(d.getId()).stream()
+                    .filter(c -> c.getStatus() != Claim.Status.CANCELLED)
+                    .findFirst().orElse(null);
+        }
+        return toResponse(d, activeClaim);
+    }
+
+    public DonationResponse toResponse(Donation d, Claim activeClaim) {
         String claimantName = null;
         String qrToken = null;
-        if (d.getStatus() == Donation.Status.CLAIMED || d.getStatus() == Donation.Status.COMPLETED) {
-            java.util.Optional<Claim> activeClaim = claimRepository.findByDonationId(d.getId()).stream()
-                    .filter(c -> c.getStatus() != Claim.Status.CANCELLED)
-                    .findFirst();
-            if (activeClaim.isPresent()) {
-                claimantName = activeClaim.get().getClaimant().getName();
-                qrToken = activeClaim.get().getQrToken();
-            }
+        if ((d.getStatus() == Donation.Status.CLAIMED || d.getStatus() == Donation.Status.COMPLETED) && activeClaim != null) {
+            claimantName = activeClaim.getClaimant().getName();
+            qrToken = activeClaim.getQrToken();
         }
 
         return DonationResponse.builder()

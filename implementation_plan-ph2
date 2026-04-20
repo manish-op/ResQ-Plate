@@ -1,0 +1,244 @@
+# ResQ Plate — UI Uplift & Phase 2 Implementation Plan
+
+## Overview
+
+This plan covers two distinct workstreams:
+
+1. **UI/UX Uplift (Frontend)** — A cinematic public landing page, and significant dashboard improvements for both Donors and Recipients.
+2. **Phase 2: AI Agent Expansion (MCP Integration)** — Introducing a Spring AI MCP server that exposes platform operations as AI-callable tools.
+
+---
+
+## Part 1: UI/UX Uplift
+
+### New Routes
+
+The current app sends `/` directly to `/auth`. We'll add a public landing page at `/`.
+
+```
+/              → LandingPage.jsx  (NEW — public)
+/auth          → AuthPage.jsx     (IMPROVE)
+/donor         → DonorDashboard.jsx (IMPROVE)
+/recipient     → RecipientApp.jsx   (IMPROVE)
+```
+
+---
+
+### Frontend Component Changes
+
+#### [NEW] `src/pages/LandingPage.jsx`
+
+A stunning, fully animated public landing page with:
+
+- **Hero Section**: Full-screen animated gradient background with particles. Tagline: *"Rescue surplus food. Feed communities. Save the planet."* Two prominent CTAs: **"I'm a Donor →"** and **"I'm a Recipient →"** that link directly to `/auth` with a role pre-selected.
+- **Impact Counter Section**: Animated live counters (pulled from `/api/health` or static) — *"12,847 pounds rescued"*, *"3,200 meals served"*, *"98 tonnes of CO₂ avoided"*.
+- **How It Works Section**: 3-step animated cards for Donors and a separate 3-step flow for Recipients — with SVG icons and step-connector lines.
+- **Feature Highlights Section**: Glassmorphism cards showcasing AI-Powered Listing, Real-Time WebSocket Feed, QR Code Handover, Tax Reports.
+- **Footer**: Logo, links to GitHub, mission statement.
+
+#### [IMPROVE] `src/pages/AuthPage.jsx`
+
+- Add **role-selector tiles** (not a dropdown) — two prominent clickable cards: 🍽️ *Donor* and 🤲 *Recipient* with hover glow effects.
+- Support a URL query param: `/auth?role=DONOR` so the CTA from the landing page pre-selects the correct role tile.
+- Add a **"Back to Home"** link.
+- Improve button state with a loading spinner.
+
+#### [IMPROVE] `src/pages/DonorDashboard.jsx`
+
+- Add a **sticky top Navbar** with the ResQ Plate logo, navigation links (Dashboard, Orders, Tax Report), connection badge, and Logout.
+- Add a **stats bar** below the header — animated cards showing: *Total Listed*, *Claimed*, *Completed*, *kg Rescued*.
+- Refine the AI listing textarea with a **character counter** and improved placeholder with example text cycling.
+- Improve **donation cards** with a colored timeline badge (AVAILABLE → CLAIMED → COMPLETED), a mini-map placeholder, and a collapsible details section.
+- Add a **Tax Report download button** wired to `GET /api/reports/tax-report`.
+
+#### [IMPROVE] `src/pages/RecipientApp.jsx`
+
+- Add the same **sticky Navbar** component.
+- Add a **filter & sort bar**: filter by category (BAKERY, PRODUCE, etc.), sort by urgency or expiry time.
+- Add a **distance indicator** on each card (using latitude/longitude if available).
+- Improve the **claim QR modal** — make it larger, with a pulsing green border and a countdown timer for expiry.
+- Add a **"My Claims" tab** embedded in the page itself, rather than a separate route.
+
+#### [NEW] `src/components/Navbar.jsx`
+
+A shared, reusable navbar component for authenticated pages, showing the ResQ Plate logo, role-specific nav links, WebSocket status pill, and logout.
+
+#### [IMPROVE] `src/index.css`
+
+- Add new CSS variables for landing page gradients.
+- Add `@keyframes float`, `@keyframes counter-tick`, `@keyframes shimmer` animations.
+- Add navbar styles.
+- Add hero section, feature card, step-connector, and impact counter utility classes.
+
+---
+
+## Part 2: Phase 2 — AI Agent Expansion (MCP Integration)
+
+### Architecture Overview
+
+```mermaid
+graph TD
+    A[React Frontend] -->|REST| B[Spring Boot REST API]
+    B --> C[(PostgreSQL)]
+    B --> D[Spring AI / Groq]
+    
+    E[Desktop AI Assistant / Claude Desktop] -->|MCP Protocol| F[Spring AI MCP Server]
+    G[NGO's AI Agent] -->|MCP Protocol| F
+    F --> C
+    F --> B
+    
+    A -->|WebSocket| B
+    A -->|Chatbot UI| H[Support Bot MCP Client]
+    H -->|MCP Protocol| F
+```
+
+The **MCP Server** is hosted **within the same Spring Boot application** as a new module. It is secured by an MCP-specific API key (separate from JWT). External agents connect to it via stdin/stdout for local tools, or via SSE/HTTP for remote agents.
+
+---
+
+### Backend Changes
+
+#### [MODIFY] `pom.xml`
+
+Add the Spring AI MCP Server dependency:
+
+```xml
+<!-- MCP Server — exposes tools for AI agents -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
+</dependency>
+```
+
+#### [MODIFY] `application.properties`
+
+```properties
+# ── MCP Server ────────────────────────────────────────────────────
+spring.ai.mcp.server.name=resq-plate-mcp
+spring.ai.mcp.server.version=1.0.0
+spring.ai.mcp.server.type=SYNC
+# For remote agents via SSE, enable the HTTP transport
+spring.ai.mcp.server.sse.enabled=true
+spring.ai.mcp.server.sse.api-key=${MCP_API_KEY}
+```
+
+---
+
+### Tool 5: Platform Admin Copilot (Data Retrieval Tools)
+
+#### [NEW] `src/main/java/com/resq/ResQ_Plate/mcp/AdminCopilotTools.java`
+
+A `@Service` class annotated with `@Tool` methods. Each method becomes an AI-callable function.
+
+```java
+@Service
+public class AdminCopilotTools {
+
+    @Tool(description = "Get a summary of food donations rescued this month, including total kg and meal count")
+    public Map<String, Object> getMonthlyRescueSummary() { ... }
+
+    @Tool(description = "Get a list of all donors and their total contributions, sorted by kg rescued")
+    public List<Map<String, Object>> getDonorLeaderboard() { ... }
+
+    @Tool(description = "Get count of donations by status (AVAILABLE, CLAIMED, COMPLETED, EXPIRED)")
+    public Map<String, Long> getDonationStatusBreakdown() { ... }
+    
+    @Tool(description = "Get all donations expiring in the next N hours")
+    public List<Map<String, Object>> getDonationsExpiringWithinHours(
+        @ToolParam(description = "Number of hours to look ahead") int hours) { ... }
+}
+```
+
+**How to use**: Connect Claude Desktop (or any MCP-compatible client) to this server. Ask: *"How many kg of food was rescued this month?"* The AI will call `getMonthlyRescueSummary()` and give you a natural language answer.
+
+---
+
+### Tool 6: NGO Auto-Claim Agent (Action Execution Tools)
+
+#### [NEW] `src/main/java/com/resq/ResQ_Plate/mcp/NgoClaimAgentTools.java`
+
+```java
+@Service
+public class NgoClaimAgentTools {
+
+    @Tool(description = "List all currently available food donations that can be claimed")
+    public List<Map<String, Object>> listAvailableDonations() { ... }
+
+    @Tool(description = "Claim a specific food donation on behalf of the authenticated NGO")
+    public Map<String, Object> claimDonation(
+        @ToolParam(description = "The UUID of the donation to claim") String donationId) { ... }
+    
+    @Tool(description = "Find available donations matching a food category (BAKERY, PRODUCE, COOKED_MEALS, etc)")
+    public List<Map<String, Object>> findDonationsByCategory(
+        @ToolParam(description = "Food category to filter by") String category) { ... }
+}
+```
+
+**How to use**: NGOs connect their AI agent to this MCP server with their NGO API key. Their agent can: *"Monitor for any bakery donations and claim them as they become available."*
+
+---
+
+### Tool 7: Self-Service Support Bot (Document Generation Tool)
+
+#### [NEW] `src/main/java/com/resq/ResQ_Plate/mcp/SupportBotTools.java`
+
+```java
+@Service
+public class SupportBotTools {
+
+    @Tool(description = "Generate a tax donation report for a specific month and return a download link")
+    public Map<String, String> generateTaxReport(
+        @ToolParam(description = "The donor's user ID (UUID)") String donorId,
+        @ToolParam(description = "Month number (1-12)") int month,
+        @ToolParam(description = "Year (e.g. 2025)") int year) { ... }
+    
+    @Tool(description = "Get the summary of a user's donation history")
+    public Map<String, Object> getUserDonationSummary(
+        @ToolParam(description = "The user's ID (UUID)") String userId) { ... }
+}
+```
+
+#### [NEW] `src/pages/SupportChatbot.jsx` (Frontend)
+
+A floating chatbot button (💬) in the bottom-right of both dashboards. When opened, it reveals a chat panel. The chatbot connects to a new backend endpoint that routes the user's message through Spring AI, which has access to the MCP tools. This allows end users to type: *"Give me my tax report for March 2025"* and receive a file download link.
+
+#### [NEW] `src/main/java/com/resq/ResQ_Plate/controller/ChatbotController.java`
+
+A `POST /api/chatbot/message` endpoint that takes `{ "message": "..." }` and uses Spring AI with the Support Bot tools registered as functions, returning `{ "reply": "...", "downloadUrl": null | "..." }`.
+
+---
+
+### MCP Server Registration
+
+#### [NEW] `src/main/java/com/resq/ResQ_Plate/config/McpServerConfig.java`
+
+```java
+@Configuration
+public class McpServerConfig {
+    @Bean
+    public ToolCallbackProvider resqTools(
+        AdminCopilotTools adminTools,
+        NgoClaimAgentTools claimTools,
+        SupportBotTools supportTools
+    ) {
+        return MethodInvokingToolCallbackProvider.builder()
+            .toolObjects(adminTools, claimTools, supportTools)
+            .build();
+    }
+}
+```
+
+---
+
+## Verification Plan
+
+### Part 1 (UI)
+- Run `npm run dev` and visually verify the landing page at `http://localhost:5173/`.
+- Test both CTAs route to `/auth` with the correct role pre-selected.
+- Verify donor and recipient dashboards show the new navbar and stats bar.
+- Test filter/sort on recipient feed.
+
+### Part 2 (MCP)
+- Use the `spring-ai-mcp` Inspector tool (or `npx @modelcontextprotocol/inspector`) to connect to the local MCP server and verify all tools are registered.
+- Send a test message to `POST /api/chatbot/message` with `{"message": "list available donations"}` and verify the AI correctly invokes the `listAvailableDonations` tool.
+- Connect Claude Desktop to the local MCP server via `stdio` transport and verify the Admin Copilot tools are accessible.

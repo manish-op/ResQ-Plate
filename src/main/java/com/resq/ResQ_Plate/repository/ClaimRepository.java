@@ -22,4 +22,7 @@ public interface ClaimRepository extends JpaRepository<Claim, UUID> {
     List<Claim> findByClaimantId(UUID claimantId);
 
     List<Claim> findByDonationId(UUID donationId);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "donation", "claimant", "donation.donor" })
+    List<Claim> findByDonationIdIn(List<UUID> donationIds);
 }

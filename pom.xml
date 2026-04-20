@@ -123,6 +123,20 @@
 		</dependency>
 
 		<!-- ═══════════════════════════════════════ -->
+		<!-- MCP SERVER — AI AGENT TOOL EXPOSURE    -->
+		<!-- ═══════════════════════════════════════ -->
+		<!--
+		     Exposes platform operations as MCP tools for:
+		     - Admin Copilot (data retrieval)
+		     - NGO Auto-Claim Agent (action execution)
+		     - Support Bot (document generation)
+		-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
+		</dependency>
+
+		<!-- ═══════════════════════════════════════ -->
 		<!-- QR CODE — ZXING                         -->
 		<!-- ═══════════════════════════════════════ -->
 		<dependency>
