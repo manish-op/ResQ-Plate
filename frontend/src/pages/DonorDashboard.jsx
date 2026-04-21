@@ -17,8 +17,8 @@ const DonorDashboard = () => {
   const [rawText, setRawText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notifications, setNotifications] = useState([]);
 
   const { user, loading: authLoading } = useContext(AuthContext);
   const { wsService, isConnected } = useContext(WebSocketContext);
@@ -37,21 +37,18 @@ const DonorDashboard = () => {
         prev.map((d) => d.id === update.donationId ? { ...d, status: update.status } : d)
       );
     });
-    const notifySub = wsService.subscribe('/user/queue/notifications', (note) => {
-      const id = Date.now();
-      setNotifications((prev) => [...prev, { id, ...note }]);
-      fetchDonations();
-      setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 5500);
-    });
-    return () => { statusSub?.unsubscribe(); notifySub?.unsubscribe(); };
+    return () => { statusSub?.unsubscribe(); };
   }, [isConnected, wsService]);
 
   const fetchDonations = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/donations/my-donations');
       setDonations(res.data.data);
     } catch (e) {
       setError('Failed to fetch your listings: ' + (e.response?.data?.message || e.message));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,23 +96,14 @@ const DonorDashboard = () => {
     <>
       <Navbar />
 
-      {/* Notification Toasts */}
-      <div className="toast-area">
-        {notifications.map((n) => (
-          <div key={n.id} className="toast animate-slide-up">
-            🔔 {n.message}
-          </div>
-        ))}
-      </div>
-
       <div className="container page-wrapper">
 
         {/* Header */}
-        <div className="flex-between" style={{ marginBottom: '2rem' }}>
+        <div className="flex-between" style={{ marginBottom: '2.5rem' }}>
           <div>
             <h1 className="heading-lg text-gradient" style={{ marginBottom: '0.25rem' }}>Donor Dashboard</h1>
-            <p className="text-muted" style={{ fontSize: '0.9rem' }}>
-              Welcome back, <strong style={{ color: 'var(--color-text-sub)' }}>{user?.name}</strong>
+            <p className="text-muted" style={{ fontSize: '1rem' }}>
+              Welcome back, <strong style={{ color: '#0f172a' }}>{user?.name}</strong>
               {user?.organizationName && ` · ${user.organizationName}`}
             </p>
           </div>
@@ -126,20 +114,16 @@ const DonorDashboard = () => {
               style={{ position: 'relative' }}
               onClick={() => navigate('/donor/orders')}
             >
-              🔔 Orders
+              Notifications
               {claimed > 0 && (
-                <span style={{
-                  position: 'absolute', top: '-6px', right: '-6px',
-                  background: 'var(--color-primary)', color: 'white',
-                  fontSize: '0.68rem', padding: '2px 6px', borderRadius: '999px', fontWeight: 700,
-                }}>
-                  {claimed}
+                <span className="status-badge available" style={{ marginLeft: '0.5rem', borderRadius: '2px' }}>
+                  {claimed} NEW
                 </span>
               )}
             </button>
             <button
               id="donor-tax-report-btn"
-              className="btn-secondary"
+              className="btn-primary"
               onClick={handleDownloadReport}
             >
               📊 Tax Report
@@ -148,12 +132,12 @@ const DonorDashboard = () => {
         </div>
 
         {/* Stats Bar */}
-        <div className="stats-bar" style={{ marginBottom: '2rem' }}>
+        <div className="stats-bar" style={{ marginBottom: '2.5rem' }}>
           {[
-            { label: 'Total Listed', value: total, icon: '📋', color: 'var(--color-text-main)' },
-            { label: 'Claimed', value: claimed, icon: '📦', color: 'var(--color-accent)' },
-            { label: 'Completed', value: completed, icon: '✅', color: 'var(--color-primary)' },
-            { label: 'kg Rescued', value: kgRescued, icon: '♻️', color: 'var(--color-secondary)' },
+            { label: 'Total Listed', value: total, icon: '📋', color: '#0f172a' },
+            { label: 'Claimed', value: claimed, icon: '📦', color: '#d97706' },
+            { label: 'Completed', value: completed, icon: '✅', color: '#059669' },
+            { label: 'kg Rescued', value: kgRescued, icon: '♻️', color: '#2563eb' },
           ].map((s) => (
             <div key={s.label} className="stat-card">
               <div className="stat-card-value" style={{ color: s.color }}>{s.value}</div>
@@ -164,31 +148,20 @@ const DonorDashboard = () => {
         </div>
 
         {/* AI Listing Panel */}
-        <section className="glass-panel animate-slide-up" style={{ marginBottom: '2.5rem', borderColor: 'rgba(16,185,129,0.2)' }}>
-          <div className="flex-between" style={{ marginBottom: '1rem' }}>
+        <section className="glass-panel animate-slide-up" style={{ marginBottom: '3rem', background: '#f8fafc' }}>
+          <div className="flex-between" style={{ marginBottom: '1.25rem' }}>
             <div>
-              <h2 style={{ color: 'var(--color-primary)', fontSize: '1.2rem', marginBottom: '0.25rem' }}>
-                ✨ AI Frictionless Listing
+              <h2 style={{ color: '#059669', fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                Quick Listing (AI Powered)
               </h2>
-              <p className="text-muted" style={{ fontSize: '0.88rem' }}>
-                Describe your surplus food in plain English — our AI handles the rest.
+              <p className="text-muted" style={{ fontSize: '0.95rem' }}>
+                Just type what you have. We'll extract quantity, weight, and expiry automatically.
               </p>
-            </div>
-            <div style={{
-              fontSize: '0.75rem', color: 'var(--color-text-muted)',
-              background: 'rgba(16,185,129,0.06)', padding: '0.3rem 0.8rem',
-              borderRadius: 'var(--radius-full)', border: '1px solid rgba(16,185,129,0.15)',
-            }}>
-              {rawText.length} chars
             </div>
           </div>
 
           {error && (
-            <div style={{
-              padding: '0.75rem 1rem', marginBottom: '1rem',
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-              borderRadius: 'var(--radius-md)', color: 'var(--color-danger)', fontSize: '0.88rem',
-            }}>
+            <div className="status-badge expired" style={{ width: '100%', marginBottom: '1.25rem', padding: '0.75rem' }}>
               ⚠️ {error}
             </div>
           )}
@@ -196,22 +169,24 @@ const DonorDashboard = () => {
           <form onSubmit={handleAiSubmit} style={{ position: 'relative' }}>
             <textarea
               id="ai-listing-textarea"
+              className="glass-panel-light"
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              placeholder={'e.g. "We have 10 trays of vegeterian pasta and 30 bread rolls all expiring tonight at 8pm."'}
-              rows={4}
-              style={{ width: '100%', fontSize: '1rem', resize: 'vertical', paddingRight: '9rem', lineHeight: 1.6 }}
+              placeholder={'e.g. "We have 10 trays of vegeterian pasta and 30 bread rolls expiring tonight."'}
+              rows={3}
+              style={{ width: '100%', fontSize: '1.1rem', resize: 'vertical', background: '#ffffff' }}
               disabled={aiLoading}
             />
-            <button
-              id="ai-listing-submit"
-              type="submit"
-              className="btn-primary"
-              style={{ position: 'absolute', bottom: '0.85rem', right: '0.85rem', padding: '0.55rem 1.25rem', fontSize: '0.88rem' }}
-              disabled={aiLoading || !rawText.trim()}
-            >
-              {aiLoading ? '⏳ Processing...' : '⚡ Auto-List'}
-            </button>
+            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                id="ai-listing-submit"
+                type="submit"
+                className="btn-primary"
+                disabled={aiLoading || !rawText.trim()}
+              >
+                {aiLoading ? '⏳ Processing...' : '⚡ Publish Listing'}
+              </button>
+            </div>
           </form>
         </section>
 

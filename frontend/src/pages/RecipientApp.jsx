@@ -6,12 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import SupportChatbot from '../components/SupportChatbot';
 import MapView from '../components/MapView';
+import SkeletonCard from '../components/SkeletonCard';
 
 const CATEGORIES = ['ALL', 'BAKERY', 'PRODUCE', 'COOKED_MEALS', 'DAIRY', 'BEVERAGES', 'OTHER'];
 const URGENCY_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 
 const RecipientApp = () => {
   const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [sortBy, setSortBy] = useState('urgency'); // 'urgency' | 'expiry'
   const [viewMode, setViewMode] = useState('feed'); // 'feed' | 'map'
@@ -25,11 +27,14 @@ const RecipientApp = () => {
   const navigate = useNavigate();
 
   const fetchDonations = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/donations');
       setDonations(res.data.data.filter((d) => d.status === 'AVAILABLE'));
     } catch (e) {
       console.error('Failed to fetch donations', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -216,7 +221,16 @@ const RecipientApp = () => {
         </div>
 
         {/* Feed / Map Content */}
-        {viewMode === 'map' ? (
+        {loading ? (
+          <div className="grid-cols-auto">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : viewMode === 'map' ? (
           <MapView
             donations={filtered}
             userLocation={userLocation}
@@ -225,12 +239,12 @@ const RecipientApp = () => {
           />
         ) : filtered.length === 0 ? (
           <div className="glass-panel text-center" style={{ padding: '5rem 2rem' }}>
-            <div style={{ fontSize: '3.5rem', marginBottom: '1rem', animation: 'float 3s ease-in-out infinite' }}>📡</div>
-            <h2 style={{ marginBottom: '0.5rem' }}>Watching for donations...</h2>
-            <p className="text-muted" style={{ fontSize: '0.9rem', maxWidth: '380px', margin: '0 auto' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>📡</div>
+            <h2 style={{ marginBottom: '0.75rem' }}>Watching for donations...</h2>
+            <p className="text-muted" style={{ fontSize: '0.95rem', maxWidth: '400px', margin: '0 auto' }}>
               {activeCategory !== 'ALL'
                 ? `No ${activeCategory.replace('_', ' ')} donations right now. Try another category.`
-                : "As soon as a donor lists food, it will appear here instantly via WebSocket."}
+                : "As soon as a donor lists food, it will appear here instantly."}
             </p>
           </div>
         ) : (
@@ -240,14 +254,7 @@ const RecipientApp = () => {
                 {/* Card Header */}
                 <div className="flex-between">
                   <span className="category-chip">{d.category?.replace('_', ' ')}</span>
-                  <span style={{
-                    fontSize: '0.75rem', fontWeight: 700,
-                    color: urgencyColor(d.urgency),
-                    background: `${urgencyColor(d.urgency)}18`,
-                    padding: '0.2rem 0.65rem',
-                    borderRadius: 'var(--radius-full)',
-                    border: `1px solid ${urgencyColor(d.urgency)}35`,
-                  }}>
+                  <span className="status-badge available" style={{ color: urgencyColor(d.urgency), borderColor: 'rgba(0,0,0,0.1)' }}>
                     🔥 {d.urgency}
                   </span>
                 </div>
@@ -284,15 +291,13 @@ const RecipientApp = () => {
                 {/* Expiry Countdown */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  padding: '0.6rem 0.9rem',
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  fontSize: '0.85rem',
+                  padding: '0.75rem 1rem',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '0.9rem',
                 }}>
-                  <span>⏱</span>
                   <span className="text-muted">Expires in</span>
-                  <span style={{ fontWeight: 700, color: 'var(--color-accent)', marginLeft: 'auto' }}>
+                  <span style={{ fontWeight: 800, color: '#d97706', marginLeft: 'auto' }}>
                     {timeLeft(d.expiresAt)}
                   </span>
                 </div>
@@ -328,57 +333,49 @@ const RecipientApp = () => {
       {/* QR Claim Modal */}
       {claimedCode && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 500,
-          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.8)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '1rem',
         }}>
           <div className="glass-panel animate-slide-up" style={{
-            maxWidth: '400px', width: '100%', textAlign: 'center',
-            border: '1px solid rgba(16,185,129,0.4)',
-            boxShadow: '0 0 60px rgba(16,185,129,0.2)',
+            maxWidth: '420px', width: '100%', textAlign: 'center',
+            border: '2px solid var(--color-primary)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            background: '#ffffff',
           }}>
-            <div style={{
-              width: '52px', height: '52px', borderRadius: '50%',
-              background: 'rgba(16,185,129,0.15)', border: '2px solid var(--color-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.5rem', margin: '0 auto 1rem',
-              animation: 'pulse-glow 2s infinite',
-            }}>
-              ✅
-            </div>
-            <h3 style={{ color: 'var(--color-primary)', fontSize: '1.3rem', marginBottom: '0.5rem' }}>
-              Claim Successful!
+            <h3 style={{ color: 'var(--color-primary)', fontSize: '1.5rem', marginBottom: '1rem' }}>
+              Claim Confirmed
             </h3>
-            <p className="text-muted" style={{ fontSize: '0.88rem', marginBottom: '1.5rem' }}>
-              Present this QR code to the donor when you arrive for pickup.
+            <p className="text-muted" style={{ fontSize: '0.95rem', marginBottom: '2rem' }}>
+              Present this code to the donor during pickup.
             </p>
 
             <div style={{
-              background: 'white', borderRadius: 'var(--radius-md)',
-              padding: '1.25rem', display: 'inline-block', marginBottom: '1.5rem',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+              background: '#ffffff', border: '1px solid #e2e8f0',
+              padding: '1.5rem', display: 'inline-block', marginBottom: '2rem',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
             }}>
               {claimedCode.qrImage ? (
                 <img
                   src={claimedCode.qrImage}
                   alt="Pickup QR Code"
-                  style={{ width: '200px', height: '200px', display: 'block' }}
+                  style={{ width: '220px', height: '220px', display: 'block' }}
                 />
               ) : (
-                <span style={{ color: '#000', fontFamily: 'monospace', fontSize: '1rem', wordBreak: 'break-all' }}>
+                <div style={{ padding: '2rem', background: '#f8fafc', fontJoin: 'miter' }}>
                   {claimedCode.token}
-                </span>
+                </div>
               )}
             </div>
 
             <button
               id="close-qr-modal"
-              className="btn-secondary"
-              style={{ width: '100%', borderRadius: 'var(--radius-md)' }}
+              className="btn-primary"
+              style={{ width: '100%' }}
               onClick={() => setClaimedCode(null)}
             >
-              Close
+              Done
             </button>
           </div>
         </div>

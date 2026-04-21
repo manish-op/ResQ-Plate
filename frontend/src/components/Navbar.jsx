@@ -27,19 +27,9 @@ const Navbar = () => {
         <span>ResQ<span style={{ color: 'var(--color-primary)' }}>Plate</span></span>
       </Link>
 
+      {/* Portal Label */}
       {user && (
-        <div style={{
-          marginLeft: '1rem',
-          padding: '0.2rem 0.6rem',
-          borderRadius: '4px',
-          fontSize: '0.7rem',
-          fontWeight: 800,
-          letterSpacing: '0.05em',
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid var(--color-primary-glow)',
-          color: 'var(--color-primary)',
-          textTransform: 'uppercase'
-        }}>
+        <div className={`status-badge ${isDonor ? 'available' : 'claimed'}`} style={{ marginLeft: '1rem', border: '1px solid #cbd5e1' }}>
           {isDonor ? 'Donor Portal' : 'Recipient Portal'}
         </div>
       )}
@@ -85,19 +75,18 @@ const Navbar = () => {
         {/* WebSocket Status */}
         <div className={`ws-badge ${isConnected ? 'live' : ''}`}>
           <span className="ws-dot" />
-          {isConnected ? 'Live' : 'Offline'}
+          <span style={{ opacity: isConnected ? 1 : 0.6 }}>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
         </div>
 
         {/* User name chip */}
         {user && (
           <div style={{
             padding: '0.35rem 0.9rem',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--color-primary-glow)',
-            border: '1px solid var(--color-primary)',
+            background: '#f1f5f9',
+            border: '1px solid #e2e8f0',
             fontSize: '0.82rem',
             fontWeight: '700',
-            color: 'var(--color-text-main)',
+            color: '#334155',
             maxWidth: '140px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -111,11 +100,12 @@ const Navbar = () => {
         <button
           className="btn-secondary"
           onClick={handleLogout}
-          style={{ padding: '0.45rem 1.1rem', fontSize: '0.88rem', borderRadius: 'var(--radius-md)' }}
+          style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}
         >
           Logout
         </button>
       </div>
+
     </nav>
   );
 };

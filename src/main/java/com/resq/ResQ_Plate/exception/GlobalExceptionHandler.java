@@ -56,13 +56,23 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handles all business logic RuntimeExceptions (not found, double-booking, etc.)
+     * Handles custom business exceptions.
+     */
+    @ExceptionHandler(ResQException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResQException(ResQException ex) {
+        log.warn("Business Logic Exception: {}", ex.getMessage());
+        return ResponseEntity.status(ex.getStatus())
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
+     * Handles all unexpected RuntimeExceptions.
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
-        log.error("Internal Runtime Exception: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+        log.error("Unhandled Runtime Exception: ", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("A system error occurred: " + ex.getMessage()));
     }
 
     /**

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { NotificationProvider } from './context/NotificationContext';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import DonorDashboard from './pages/DonorDashboard';
@@ -12,23 +13,25 @@ import ThemeWrapper from './components/ThemeWrapper';
 
 const App = () => {
   return (
-    <AuthProvider>
-      <WebSocketProvider>
-        <BrowserRouter>
-          <ThemeWrapper>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/donor" element={<DonorDashboard />} />
-              <Route path="/donor/orders" element={<DonorOrdersPage />} />
-              <Route path="/recipient" element={<RecipientApp />} />
-              <Route path="/recipient/claims" element={<RecipientClaimsPage />} />
-              <Route path="/verify/:token" element={<QrVerifyPage />} />
-            </Routes>
-          </ThemeWrapper>
-        </BrowserRouter>
-      </WebSocketProvider>
-    </AuthProvider>
+    <NotificationProvider>
+      <AuthProvider>
+        <WebSocketProvider>
+          <BrowserRouter>
+            <ThemeWrapper>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/donor" element={<DonorDashboard />} />
+                <Route path="/donor/orders" element={<DonorOrdersPage />} />
+                <Route path="/recipient" element={<RecipientApp />} />
+                <Route path="/recipient/claims" element={<RecipientClaimsPage />} />
+                <Route path="/verify/:token" element={<QrVerifyPage />} />
+              </Routes>
+            </ThemeWrapper>
+          </BrowserRouter>
+        </WebSocketProvider>
+      </AuthProvider>
+    </NotificationProvider>
   );
 };
 
