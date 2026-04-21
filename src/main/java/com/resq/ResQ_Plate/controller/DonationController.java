@@ -22,11 +22,12 @@ import java.util.UUID;
 public class DonationController {
 
     private final DonationService donationService;
+    private final com.resq.ResQ_Plate.service.AuditService auditService;
+    private final com.resq.ResQ_Plate.repository.UserRepository userRepository;
+    private final jakarta.servlet.http.HttpServletRequest httpServletRequest;
 
     /**
      * POST /api/donations/ai-listing  [DONOR only]
-     * Body: { "rawText": "We have 15 loaves of sourdough expiring tomorrow..." }
-     * Gemini AI extracts category, quantity, urgency, expiry — saves and broadcasts.
      */
     @PostMapping("/ai-listing")
     @PreAuthorize("hasRole('DONOR')")
@@ -36,6 +37,12 @@ public class DonationController {
         DonationResponse response = donationService.createFromAiListing(
                 request.getRawText(), authentication.getName()
         );
+
+        userRepository.findByEmail(authentication.getName()).ifPresent(user -> 
+            auditService.log(user, com.resq.ResQ_Plate.entity.AuditLog.Action.DONATION_CREATE, 
+                "Listed donation via AI: " + response.getId(), httpServletRequest)
+        );
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
                         "Donation listed via AI! It's now live for nearby recipients.", response));
@@ -43,7 +50,6 @@ public class DonationController {
 
     /**
      * POST /api/donations  [DONOR only]
-     * Manual listing for donors who prefer form-based input.
      */
     @PostMapping
     @PreAuthorize("hasRole('DONOR')")
@@ -51,6 +57,12 @@ public class DonationController {
             @Valid @RequestBody ManualDonationRequest request,
             Authentication authentication) {
         DonationResponse response = donationService.createManual(request, authentication.getName());
+
+        userRepository.findByEmail(authentication.getName()).ifPresent(user -> 
+            auditService.log(user, com.resq.ResQ_Plate.entity.AuditLog.Action.DONATION_CREATE, 
+                "Listed donation manually: " + response.getId(), httpServletRequest)
+        );
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Donation listed successfully.", response));
     }

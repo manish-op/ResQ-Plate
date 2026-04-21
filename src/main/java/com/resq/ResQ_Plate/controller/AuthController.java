@@ -58,4 +58,29 @@ public class AuthController {
                 "authorities", authentication.getAuthorities().toString()
         )));
     }
+
+    /**
+     * POST /api/auth/refresh
+     * Body: { "refreshToken": "..." }
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        if (refreshToken == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Refresh token is required"));
+        }
+        AuthResponse response = authService.refreshToken(refreshToken);
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed", response));
+    }
+
+    /**
+     * POST /api/auth/complete-profile
+     */
+    @PostMapping("/complete-profile")
+    public ResponseEntity<ApiResponse<AuthResponse>> completeProfile(
+            @RequestBody com.resq.ResQ_Plate.dto.request.CompleteProfileRequest request,
+            Authentication authentication) {
+        AuthResponse response = authService.completeProfile(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Profile completed successfully", response));
+    }
 }

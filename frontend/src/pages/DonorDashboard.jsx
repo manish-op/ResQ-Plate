@@ -5,6 +5,7 @@ import { WebSocketContext } from '../context/WebSocketContext';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import SupportChatbot from '../components/SupportChatbot';
+import ChatWindow from '../components/ChatWindow';
 
 const STATUS_COLORS = {
   AVAILABLE: { badge: 'available', label: '🟢 Available' },
@@ -19,6 +20,7 @@ const DonorDashboard = () => {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
 
   const { user, loading: authLoading } = useContext(AuthContext);
   const { wsService, isConnected } = useContext(WebSocketContext);
@@ -237,14 +239,16 @@ const DonorDashboard = () => {
                         borderRadius: 'var(--radius-md)',
                         fontSize: '0.85rem',
                       }}>
-                        <p style={{ color: d.status === 'COMPLETED' ? 'var(--color-secondary)' : 'var(--color-primary)', fontWeight: 700 }}>
-                          {d.status === 'CLAIMED' ? '📍 Ready for Pickup' : '✅ Handover Complete'}
-                        </p>
-                        <p className="text-muted" style={{ marginTop: '0.2rem' }}>
-                          {d.status === 'CLAIMED'
-                            ? `Claimed by ${d.claimantName} · Scan their QR on arrival`
                             : `Picked up by ${d.claimantName} · Rescue complete!`}
                         </p>
+                        <button 
+                          id={`chat-btn-${d.id}`}
+                          className="btn-secondary" 
+                          style={{ marginTop: '0.75rem', width: '100%', padding: '0.4rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                          onClick={() => setActiveChat({ id: d.id, claimantName: d.claimantName })}
+                        >
+                          💬 Coordination Chat
+                        </button>
                       </div>
                     )}
 
@@ -264,6 +268,7 @@ const DonorDashboard = () => {
       </div>
 
       <SupportChatbot />
+      {activeChat && <ChatWindow claim={activeChat} onClose={() => setActiveChat(null)} />}
     </>
   );
 };

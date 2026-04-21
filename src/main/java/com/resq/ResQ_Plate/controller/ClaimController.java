@@ -20,6 +20,9 @@ import java.util.UUID;
 public class ClaimController {
 
     private final ClaimService claimService;
+    private final com.resq.ResQ_Plate.service.AuditService auditService;
+    private final com.resq.ResQ_Plate.repository.UserRepository userRepository;
+    private final jakarta.servlet.http.HttpServletRequest httpServletRequest;
 
     /**
      * POST /api/claims  [RECIPIENT only]
@@ -34,6 +37,12 @@ public class ClaimController {
         ClaimResponse response = claimService.claimDonation(
                 request.getDonationId(), authentication.getName()
         );
+
+        userRepository.findByEmail(authentication.getName()).ifPresent(user -> 
+            auditService.log(user, com.resq.ResQ_Plate.entity.AuditLog.Action.CLAIM_CREATE, 
+                "Claimed donation: " + request.getDonationId(), httpServletRequest)
+        );
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
                         "Donation claimed! Show the QR code to the donor on pickup.", response));

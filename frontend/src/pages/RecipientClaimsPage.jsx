@@ -2,12 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ChatWindow from '../components/ChatWindow';
 
 const RecipientClaimsPage = () => {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedQr, setSelectedQr] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
 
   const { user, logout, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -131,15 +133,34 @@ const RecipientClaimsPage = () => {
                     )}
                   </>
                 ) : (
-                  <div style={{ color: 'var(--color-primary)', fontWeight: 'bold', width: '100%', textAlign: 'center' }}>
-                     ✅ Completed
+                  <div style={{ display: 'flex', flexDirection: 'column', color: 'var(--color-primary)', width: '100%' }}>
+                     <div style={{ fontWeight: 'bold', textAlign: 'center', marginBottom: '0.5rem' }}>✅ Completed</div>
+                     <button 
+                        className="btn-secondary" 
+                        style={{ width: '100%', padding: '0.6rem', fontSize: '0.8rem' }}
+                        onClick={() => setActiveChat({ id: c.id, storeName: c.donorName })}
+                      >
+                        💬 Chat History
+                      </button>
                   </div>
+                )}
+                
+                {c.status === 'PENDING_PICKUP' && (
+                  <button 
+                    className="btn-secondary" 
+                    style={{ width: '100%', padding: '0.6rem', fontSize: '0.8rem', marginTop: '0.5rem' }}
+                    onClick={() => setActiveChat({ id: c.id, storeName: c.donorName })}
+                  >
+                    💬 Chat Coordination
+                  </button>
                 )}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {activeChat && <ChatWindow claim={activeChat} onClose={() => setActiveChat(null)} />}
 
       {/* QR Modal Overlay */}
       {selectedQr && (

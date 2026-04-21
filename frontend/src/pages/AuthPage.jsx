@@ -232,6 +232,28 @@ const AuthPage = () => {
               onChange={handleChange}
             />
 
+            <div style={{ position: 'relative', margin: '1rem 0', textAlign: 'center' }}>
+              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'var(--color-border)', zIndex: 0 }} />
+              <span style={{ position: 'relative', background: 'var(--color-bg-primary)', padding: '0 0.75rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', zIndex: 1 }}>
+                OR
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
+              className="btn-secondary"
+              style={{ padding: '0.8rem', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.75rem' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4" />
+                <path d="M9 18c2.43 0 4.467-.806 5.956-2.184L12.048 13.56c-.813.545-1.854.867-3.048.867-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853" />
+                <path d="M3.964 10.712c-.18-.545-.282-1.125-.282-1.712s.102-1.167.282-1.712V4.956H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.044l3.007-2.332z" fill="#FBBC05" />
+                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.582C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.956L3.964 7.288c.708-2.127 2.692-3.708 5.036-3.708z" fill="#EA4335" />
+              </svg>
+              Continue with Google
+            </button>
+
             <button
               id="auth-submit-btn"
               type="submit"
