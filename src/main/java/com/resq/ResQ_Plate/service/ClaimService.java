@@ -4,14 +4,17 @@ import com.resq.ResQ_Plate.dto.response.ClaimResponse;
 import com.resq.ResQ_Plate.entity.Claim;
 import com.resq.ResQ_Plate.entity.Donation;
 import com.resq.ResQ_Plate.entity.User;
+import com.resq.ResQ_Plate.exception.ResQException;
 import com.resq.ResQ_Plate.repository.ClaimRepository;
 import com.resq.ResQ_Plate.repository.DonationRepository;
 import com.resq.ResQ_Plate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -39,23 +42,32 @@ public class ClaimService {
          * 5. Broadcasts WebSocket events
          */
         @Transactional
-        public ClaimResponse claimDonation(UUID donationId, String claimantEmail) {
-                Donation donation = donationRepository.findById(donationId)
-                                .orElseThrow(() -> new RuntimeException("Donation not found: " + donationId));
-
-                if (donation.getStatus() != Donation.Status.AVAILABLE) {
-                        throw new RuntimeException(
-                                        "This donation is no longer available (status: " + donation.getStatus() + ")");
+        public ClaimResponse claimDonation(UUID donationId, String claimantEmail, String idempotencyKey) {
+                if (!StringUtils.hasText(idempotencyKey)) {
+                        throw new ResQException("Missing Idempotency-Key header", HttpStatus.BAD_REQUEST);
                 }
 
                 User claimant = userRepository.findByEmail(claimantEmail)
-                                .orElseThrow(() -> new RuntimeException("Claimant account not found"));
+                                .orElseThrow(() -> new ResQException("Claimant account not found", HttpStatus.NOT_FOUND));
 
-                // Prevent double-booking
-                claimRepository.findByDonationIdAndStatusNot(donationId, Claim.Status.CANCELLED)
-                                .ifPresent(existingClaim -> {
-                                        throw new RuntimeException("This donation has already been claimed");
-                                });
+                // Idempotent replay support for client retries
+                Claim replayedClaim = claimRepository
+                                .findByClaimantIdAndIdempotencyKey(claimant.getId(), idempotencyKey)
+                                .orElse(null);
+                if (replayedClaim != null) {
+                        log.info("Idempotent replay for donation [{}] by {}", donationId, claimantEmail);
+                        return toResponse(replayedClaim);
+                }
+
+                Donation donation = donationRepository.findWithLockById(donationId)
+                                .orElseThrow(() -> new ResQException("Donation not found: " + donationId,
+                                                HttpStatus.NOT_FOUND));
+
+                if (donation.getStatus() != Donation.Status.AVAILABLE) {
+                        throw new ResQException(
+                                        "This donation is no longer available (status: " + donation.getStatus() + ")",
+                                        HttpStatus.CONFLICT);
+                }
 
                 // Generate unique QR token and encode MINIFIED JSON data (easier for low-res
                 // cameras to scan)
@@ -74,6 +86,7 @@ public class ClaimService {
                                 .claimant(claimant)
                                 .qrToken(qrToken)
                                 .qrCodeBase64(qrCodeBase64)
+                                .idempotencyKey(idempotencyKey)
                                 .status(Claim.Status.PENDING_PICKUP)
                                 .build();
 
@@ -101,11 +114,13 @@ public class ClaimService {
         @Transactional
         public ClaimResponse verifyPickup(String qrToken) {
                 Claim claim = claimRepository.findByQrToken(qrToken)
-                                .orElseThrow(() -> new RuntimeException("Invalid or unrecognized QR code"));
+                                .orElseThrow(() -> new ResQException("Invalid or unrecognized QR code",
+                                                HttpStatus.NOT_FOUND));
 
                 if (claim.getStatus() != Claim.Status.PENDING_PICKUP) {
-                        throw new RuntimeException(
-                                        "This QR code has already been used (status: " + claim.getStatus() + ")");
+                        throw new ResQException(
+                                        "This QR code has already been used (status: " + claim.getStatus() + ")",
+                                        HttpStatus.CONFLICT);
                 }
 
                 // Mark claim as completed
@@ -132,13 +147,13 @@ public class ClaimService {
         public ClaimResponse getClaimById(UUID id) {
                 return claimRepository.findById(id)
                                 .map(this::toResponse)
-                                .orElseThrow(() -> new RuntimeException("Claim not found: " + id));
+                                .orElseThrow(() -> new ResQException("Claim not found: " + id, HttpStatus.NOT_FOUND));
         }
 
         @Transactional(readOnly = true)
         public java.util.List<ClaimResponse> getClaimsByClaimantEmail(String email) {
                 User claimant = userRepository.findByEmail(email)
-                                .orElseThrow(() -> new RuntimeException("Claimant account not found"));
+                                .orElseThrow(() -> new ResQException("Claimant account not found", HttpStatus.NOT_FOUND));
                 return claimRepository.findByClaimantId(claimant.getId()).stream()
                                 .map(this::toResponse)
                                 .sorted((a, b) -> b.getClaimedAt().compareTo(a.getClaimedAt()))

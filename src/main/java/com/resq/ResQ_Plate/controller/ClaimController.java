@@ -27,15 +27,17 @@ public class ClaimController {
     /**
      * POST /api/claims  [RECIPIENT only]
      * Body: { "donationId": "uuid" }
+     * Header: Idempotency-Key: <unique-request-key>
      * Prevents double-booking, generates QR code, returns base64 QR for display.
      */
     @PostMapping
     @PreAuthorize("hasRole('RECIPIENT')")
     public ResponseEntity<ApiResponse<ClaimResponse>> claimDonation(
             @Valid @RequestBody ClaimRequest request,
+            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
             Authentication authentication) {
         ClaimResponse response = claimService.claimDonation(
-                request.getDonationId(), authentication.getName()
+                request.getDonationId(), authentication.getName(), idempotencyKey
         );
 
         userRepository.findByEmail(authentication.getName()).ifPresent(user -> 
