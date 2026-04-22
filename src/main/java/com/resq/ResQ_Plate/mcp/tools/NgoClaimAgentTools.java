@@ -18,7 +18,7 @@ public class NgoClaimAgentTools {
 
     private final ClaimService claimService;
 
-    public record ClaimRequest(String donationId, String claimantEmail) {}
+    public record ClaimRequest(String donationId, String claimantEmail, String idempotencyKey) {}
 
     // Tool Name: claimDonation
     // Description: Claims a donation on behalf of an NGO/Recipient.
@@ -28,7 +28,13 @@ public class NgoClaimAgentTools {
         return (request) -> {
             log.info("MCP Tool Called: claimDonation for {} by {}", request.donationId(), request.claimantEmail());
             try {
-                return claimService.claimDonation(UUID.fromString(request.donationId()), request.claimantEmail());
+                String idempotencyKey = (request.idempotencyKey() == null || request.idempotencyKey().isBlank())
+                        ? "mcp-" + UUID.randomUUID()
+                        : request.idempotencyKey();
+                return claimService.claimDonation(
+                        UUID.fromString(request.donationId()),
+                        request.claimantEmail(),
+                        idempotencyKey);
             } catch (Exception e) {
                 log.error("Error in claimDonation tool: {}", e.getMessage());
                 throw new RuntimeException("Failed to claim donation: " + e.getMessage());

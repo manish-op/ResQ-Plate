@@ -3,14 +3,20 @@ package com.resq.ResQ_Plate.repository;
 import com.resq.ResQ_Plate.entity.Donation;
 import com.resq.ResQ_Plate.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.LockModeType;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface DonationRepository extends JpaRepository<Donation, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Donation> findWithLockById(UUID id);
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "donor" })
     List<Donation> findByStatus(Donation.Status status);

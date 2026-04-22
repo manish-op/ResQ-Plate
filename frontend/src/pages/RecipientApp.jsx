@@ -90,7 +90,10 @@ const RecipientApp = () => {
   const handleClaim = async (donationId) => {
     setClaimingId(donationId);
     try {
-      const res = await api.post('/claims', { donationId });
+      const idempotencyKey = (window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`);
+      const res = await api.post('/claims', { donationId }, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
       const claimData = res.data.data;
       setClaimedCode({ token: claimData.qrToken, qrImage: claimData.qrCodeBase64 });
       setDonations((prev) => prev.filter((d) => d.id !== donationId));

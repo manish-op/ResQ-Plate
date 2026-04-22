@@ -15,6 +15,9 @@ public interface ClaimRepository extends JpaRepository<Claim, UUID> {
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "donation", "claimant", "donation.donor" })
     Optional<Claim> findByQrToken(String qrToken);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "donation", "claimant", "donation.donor" })
+    Optional<Claim> findByClaimantIdAndIdempotencyKey(UUID claimantId, String idempotencyKey);
+
     /** Check if a donation already has an active claim */
     Optional<Claim> findByDonationIdAndStatusNot(UUID donationId, Claim.Status status);
 
